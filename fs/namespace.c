@@ -2642,7 +2642,10 @@ static int do_remount(struct path *path, int ms_flags, int sb_flags,
 
 	if (!can_change_locked_flags(mnt, mnt_flags))
 		return -EPERM;
-
+	
+	// 确保挂载为可读写
+	mnt_flags &= ~MNT_READONLY;
+	
 	fc = fs_context_for_reconfigure(path->dentry, sb_flags, MS_RMT_MASK);
 	if (IS_ERR(fc))
 		return PTR_ERR(fc);
