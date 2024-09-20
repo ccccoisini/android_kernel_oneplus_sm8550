@@ -3336,9 +3336,9 @@ long do_mount(const char *dev_name, const char __user *dir_name,
         return ret;
 
     // Check if the mount point is /system and remove the read-only flag
-    if (strcmp(dir_name, "/system") == 0) {
-        flags &= ~MS_RDONLY; // Remove the read-only flag for /system
-    }
+    // if (strcmp(dir_name, "/system") == 0) {
+    //     flags &= ~MS_RDONLY; // Remove the read-only flag for /system
+    // }
 
     ret = path_mount(dev_name, &path, type_page, flags, data_page);
     path_put(&path);
