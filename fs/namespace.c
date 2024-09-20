@@ -3326,17 +3326,23 @@ int path_mount(const char *dev_name, struct path *path,
 }
 
 long do_mount(const char *dev_name, const char __user *dir_name,
-		const char *type_page, unsigned long flags, void *data_page)
+              const char *type_page, unsigned long flags, void *data_page)
 {
-	struct path path;
-	int ret;
+    struct path path;
+    int ret;
 
-	ret = user_path_at(AT_FDCWD, dir_name, LOOKUP_FOLLOW, &path);
-	if (ret)
-		return ret;
-	ret = path_mount(dev_name, &path, type_page, flags, data_page);
-	path_put(&path);
-	return ret;
+    ret = user_path_at(AT_FDCWD, dir_name, LOOKUP_FOLLOW, &path);
+    if (ret)
+        return ret;
+
+    // Check if the mount point is /system and remove the read-only flag
+    if (strcmp(dir_name, "/system") == 0) {
+        flags &= ~MS_RDONLY; // Remove the read-only flag for /system
+    }
+
+    ret = path_mount(dev_name, &path, type_page, flags, data_page);
+    path_put(&path);
+    return ret;
 }
 
 static struct ucounts *inc_mnt_namespaces(struct user_namespace *ns)
