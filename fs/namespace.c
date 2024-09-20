@@ -33,6 +33,10 @@
 #include <linux/shmem_fs.h>
 #include <linux/mnt_idmapping.h>
 
+#include <linux/printk.h> // For printk
+#include <linux/fs.h>     // For vfs_* functions
+#include <linux/dcache.h> // For dentry
+
 #include "pnode.h"
 #include "internal.h"
 
@@ -3335,12 +3339,37 @@ long do_mount(const char *dev_name, const char __user *dir_name,
     if (ret)
         return ret;
 
-    // Check if the mount point is /system and remove the read-only flag
-    // if (strcmp(dir_name, "/system") == 0) {
-    //     flags &= ~MS_RDONLY; // Remove the read-only flag for /system
-    // }
+    // Debugging: Print the mount point
+    printk(KERN_INFO "Mounting: %s\n", dir_name);
 
-    ret = path_mount(dev_name, &path, type_page, flags, data_page);
+    // Check if the mount point is /system
+    if (strcmp(dir_name, "/system") == 0) {
+        // Ensure /system is mounted as read-only
+        flags |= MS_RDONLY;
+
+        // Mount /system first
+        ret = path_mount(dev_name, &path, type_page, flags, data_page);
+        if (ret) {
+            path_put(&path);
+            return ret;
+        }
+
+        // Now handle /system/framework
+        struct path framework_path;
+        ret = kern_path("/system/framework", LOOKUP_FOLLOW, &framework_path);
+        if (ret) {
+            printk(KERN_ERR "Failed to find /system/framework\n");
+            path_put(&path);
+            return ret;
+        }
+
+        // Remove the read-only flag for /system/framework
+        framework_path.mnt->mnt_flags &= ~MS_RDONLY;
+        path_put(&framework_path);
+    } else {
+        ret = path_mount(dev_name, &path, type_page, flags, data_page);
+    }
+
     path_put(&path);
     return ret;
 }
